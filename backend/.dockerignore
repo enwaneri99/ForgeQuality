@@ -1,0 +1,38 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Local databases and SQLite files
+*.db
+*.sqlite3
+quality.db
+test_quality.db
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Version control and editor files
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+
+# Testing files not required in production runtime
+tests/
+
+# Virtual environments
+venv/
+.venv/
+env/
+

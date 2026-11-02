@@ -1,0 +1,33 @@
+# AWS Target Region & Environment
+aws_region  = "us-east-1"
+environment = "production"
+
+# Custom Domain & SSL/TLS (Optional - Leave empty to use ALB DNS name on HTTP)
+domain_name     = "" # e.g. "quality.yourplant.com"
+certificate_arn = "" # e.g. "arn:aws:acm:us-east-1:123456789012:certificate/abc-123" (if already existing in ACM)
+route53_zone_id = "" # e.g. "Z123456789ABC" (if you want Terraform to manage DNS validation and alias)
+
+# VPC Network CIDR
+vpc_cidr = "10.0.0.0/16"
+
+# ECR Image URIs (Replace with your AWS Account ID and Image Tags)
+backend_image  = "123456789012.dkr.ecr.us-east-1.amazonaws.com/forgequality-backend:1.0.0"
+frontend_image = "123456789012.dkr.ecr.us-east-1.amazonaws.com/forgequality-frontend:1.0.0"
+
+# Compute Sizing for Fargate (CPU units: 256 = 0.25 vCPU, 512 = 0.5 vCPU, 1024 = 1 vCPU)
+backend_cpu    = 512
+backend_memory = 1024
+backend_desired_count = 2
+
+frontend_cpu    = 256
+frontend_memory = 512
+frontend_desired_count = 2
+
+# Database Specifications
+db_instance_class    = "db.t4g.micro"
+db_allocated_storage = 20
+db_name              = "quality"
+db_username          = "quality_admin"
+
+# Initial Plant Administrator
+initial_admin_username = "plant-admin"

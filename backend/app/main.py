@@ -9,9 +9,11 @@ import qrcode
 from PIL import Image, ImageOps, UnidentifiedImageError
 from pillow_heif import register_heif_opener
 from pydantic import ValidationError, create_model
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile, status
+import logging
+import time
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy import func, select
@@ -21,6 +23,12 @@ from app import models, schemas
 from app.database import SessionLocal, get_db
 from app.security import ALGORITHM, create_access_token, hash_password, verify_password
 from app.settings import settings
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("forgequality")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,11 +40,42 @@ app = FastAPI(title="ForgeQuality API", version="1.0.0", description="Manufactur
 register_heif_opener()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def security_and_logging_middleware(request: Request, call_next):
+    start_time = time.perf_counter()
+    response: Response = await call_next(request)
+    duration_ms = (time.perf_counter() - start_time) * 1000
+
+    # Production security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+    # Access logging
+    logger.info(
+        f"{request.method} {request.url.path} - {response.status_code} ({duration_ms:.1f}ms)"
+    )
+    return response
+
+
+@app.exception_handler(Exception)
+async def global_unhandled_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        raise exc
+    logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected internal server error occurred"},
+    )
 bearer = HTTPBearer(auto_error=False)
 MAX_DEFECT_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_DEFECT_UPLOAD_BYTES = 40 * 1024 * 1024
