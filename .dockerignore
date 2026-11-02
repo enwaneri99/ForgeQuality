@@ -1,0 +1,18 @@
+# Version control and secrets
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Local SQLite databases
+*.db
+backend/quality.db
+backend/test_quality.db
+
+# Caches and dependencies
+backend/__pycache__/
+backend/.pytest_cache/
+frontend/node_modules/
+frontend/dist/
+
